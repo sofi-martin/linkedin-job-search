@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>LinkedIn Job Board</title>
+  <title>Internships in Toronto</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,16 +39,17 @@
 
     .stats {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       margin-top: 16px;
+      flex-wrap: wrap;
     }
 
     .stat {
       background: white;
       border-radius: 8px;
-      padding: 12px 16px;
+      padding: 10px 16px;
       font-size: 13px;
-      color: #333;
+      color: #555;
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
 
@@ -90,11 +91,47 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
       text-decoration: none;
       display: block;
-      transition: box-shadow 0.15s;
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow 0.2s;
     }
 
     .job-card:hover {
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .job-card .hover-overlay {
+      position: absolute;
+      inset: 0;
+      background: #0077b5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      border-radius: 10px;
+    }
+
+    .job-card:hover .hover-overlay {
+      opacity: 1;
+    }
+
+    .hover-overlay span {
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: -0.01em;
+      animation: none;
+    }
+
+    .job-card:hover .hover-overlay span {
+      animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
     }
 
     .job-title {
@@ -129,38 +166,30 @@
       color: #999;
       font-size: 14px;
     }
-
-    .last-updated {
-      font-size: 12px;
-      color: #999;
-      text-align: center;
-      margin-top: 32px;
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Toronto Intern Jobs</h1>
+      <h1>Internships in Toronto</h1>
       <p>Updated automatically every 3 hours</p>
       <div class="stats">
-        <div class="stat">Total: <span id="total-count">—</span> jobs</div>
+        <div class="stat">Total jobs: <span id="total-count">—</span></div>
+        <div class="stat">Posted today: <span id="today-count">—</span></div>
         <div class="stat">Last updated: <span id="last-updated-stat">—</span></div>
       </div>
     </header>
 
     <div class="filters">
-      <button class="filter-btn active" onclick="filterJobs('all')">All</button>
-      <button class="filter-btn" onclick="filterJobs('business')">Business</button>
-      <button class="filter-btn" onclick="filterJobs('summer')">Summer</button>
-      <button class="filter-btn" onclick="filterJobs('marketing')">Marketing</button>
+      <button class="filter-btn active" onclick="filterJobs('all', this)">All</button>
+      <button class="filter-btn" onclick="filterJobs('business', this)">Business (<span class="count-business">0</span>)</button>
+      <button class="filter-btn" onclick="filterJobs('summer', this)">Summer (<span class="count-summer">0</span>)</button>
+      <button class="filter-btn" onclick="filterJobs('marketing', this)">Marketing (<span class="count-marketing">0</span>)</button>
     </div>
 
     <div id="job-list">
       <div class="loading">Loading jobs...</div>
     </div>
-
-    <p class="last-updated" id="last-updated"></p>
   </div>
 
   <script>
@@ -169,11 +198,27 @@
     let allJobs = [];
     let currentFilter = 'all';
 
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      if (isNaN(date)) {
+        // Already a string like "March 25, 2026" — strip the year
+        return dateStr.replace(/,?\s*\d{4}/, '').trim();
+      }
+      return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    }
+
+    function isToday(dateStr) {
+      if (!dateStr) return false;
+      const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      return dateStr.includes(today) || dateStr === today;
+    }
+
     async function loadJobs() {
       try {
         const res = await fetch(`${CSV_URL}&t=${Date.now()}`);
         const text = await res.text();
-        const rows = text.trim().split('\n').slice(1); // skip header
+        const rows = text.trim().split('\n').slice(1);
 
         allJobs = rows.map(row => {
           const cols = row.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
@@ -186,10 +231,17 @@
         }).filter(j => j.title);
 
         // Update stats
+        const todayJobs = allJobs.filter(j => isToday(j.timestamp));
         document.getElementById('total-count').textContent = allJobs.length;
+        document.getElementById('today-count').textContent = todayJobs.length;
         if (allJobs.length > 0) {
-          document.getElementById('last-updated-stat').textContent = allJobs[allJobs.length - 1].timestamp;
+          document.getElementById('last-updated-stat').textContent = formatDate(allJobs[allJobs.length - 1].timestamp);
         }
+
+        // Update filter counts
+        document.querySelector('.count-business').textContent = allJobs.filter(j => j.title.toLowerCase().includes('business')).length;
+        document.querySelector('.count-summer').textContent = allJobs.filter(j => j.title.toLowerCase().includes('summer')).length;
+        document.querySelector('.count-marketing').textContent = allJobs.filter(j => j.title.toLowerCase().includes('marketing')).length;
 
         renderJobs();
       } catch (e) {
@@ -197,10 +249,10 @@
       }
     }
 
-    function filterJobs(filter) {
+    function filterJobs(filter, btn) {
       currentFilter = filter;
-      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
       renderJobs();
     }
 
@@ -216,9 +268,10 @@
 
       document.getElementById('job-list').innerHTML = filtered.map(job => `
         <a href="${job.link}" target="_blank" class="job-card">
+          <div class="hover-overlay"><span>Click to go to job posting 🚀</span></div>
           <div class="job-title">${job.title}</div>
           <div class="job-company">${job.company}</div>
-          <div class="job-meta">${job.timestamp}</div>
+          <div class="job-meta">${formatDate(job.timestamp)}</div>
         </a>
       `).join('');
     }
