@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Internships in Toronto</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌆</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩵</text></svg>">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -92,47 +92,12 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
       text-decoration: none;
       display: block;
-      position: relative;
-      overflow: hidden;
       transition: box-shadow 0.2s;
+      cursor: pointer;
     }
 
     .job-card:hover {
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .job-card .hover-overlay {
-      position: absolute;
-      inset: 0;
-      background: #0077b5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      border-radius: 10px;
-    }
-
-    .job-card:hover .hover-overlay {
-      opacity: 1;
-    }
-
-    .hover-overlay span {
-      color: white;
-      font-size: 15px;
-      font-weight: 600;
-      font-family: 'Inter', sans-serif;
-      letter-spacing: -0.01em;
-      animation: none;
-    }
-
-    .job-card:hover .hover-overlay span {
-      animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-
-    @keyframes popIn {
-      0% { transform: scale(0.7); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
     }
 
     .job-title {
@@ -154,6 +119,23 @@
       margin-top: 6px;
     }
 
+    .mouse-tag {
+      position: fixed;
+      background: #111;
+      color: white;
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 999px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+      z-index: 9999;
+      transform: translate(12px, 12px);
+    }
+
     .loading {
       text-align: center;
       padding: 60px 0;
@@ -170,6 +152,9 @@
   </style>
 </head>
 <body>
+
+  <div class="mouse-tag" id="mouse-tag">click to go to job posting :)</div>
+
   <div class="container">
     <header>
       <h1>Internships in Toronto</h1>
@@ -198,21 +183,22 @@
 
     let allJobs = [];
     let currentFilter = 'all';
+    const mouseTag = document.getElementById('mouse-tag');
+
+    document.addEventListener('mousemove', (e) => {
+      mouseTag.style.left = e.clientX + 'px';
+      mouseTag.style.top = e.clientY + 'px';
+    });
 
     function formatDate(dateStr) {
       if (!dateStr) return '';
-      const date = new Date(dateStr);
-      if (isNaN(date)) {
-        // Already a string like "March 25, 2026" — strip the year
-        return dateStr.replace(/,?\s*\d{4}/, '').trim();
-      }
-      return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+      return dateStr.replace(/,?\s*\d{4}/, '').trim();
     }
 
     function isToday(dateStr) {
       if (!dateStr) return false;
       const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-      return dateStr.includes(today) || dateStr === today;
+      return dateStr.includes(today);
     }
 
     async function loadJobs() {
@@ -231,7 +217,6 @@
           };
         }).filter(j => j.title);
 
-        // Update stats
         const todayJobs = allJobs.filter(j => isToday(j.timestamp));
         document.getElementById('total-count').textContent = allJobs.length;
         document.getElementById('today-count').textContent = todayJobs.length;
@@ -239,7 +224,6 @@
           document.getElementById('last-updated-stat').textContent = formatDate(allJobs[allJobs.length - 1].timestamp);
         }
 
-        // Update filter counts
         document.querySelector('.count-business').textContent = allJobs.filter(j => j.title.toLowerCase().includes('business')).length;
         document.querySelector('.count-summer').textContent = allJobs.filter(j => j.title.toLowerCase().includes('summer')).length;
         document.querySelector('.count-marketing').textContent = allJobs.filter(j => j.title.toLowerCase().includes('marketing')).length;
@@ -269,12 +253,16 @@
 
       document.getElementById('job-list').innerHTML = filtered.map(job => `
         <a href="${job.link}" target="_blank" class="job-card">
-          <div class="hover-overlay"><span>Click to go to job posting 🚀</span></div>
           <div class="job-title">${job.title}</div>
           <div class="job-company">${job.company}</div>
           <div class="job-meta">${formatDate(job.timestamp)}</div>
         </a>
       `).join('');
+
+      document.querySelectorAll('.job-card').forEach(card => {
+        card.addEventListener('mouseenter', () => mouseTag.style.opacity = '1');
+        card.addEventListener('mouseleave', () => mouseTag.style.opacity = '0');
+      });
     }
 
     loadJobs();
