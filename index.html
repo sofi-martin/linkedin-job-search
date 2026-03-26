@@ -11,7 +11,7 @@
 
     body {
       font-family: 'Inter', sans-serif;
-      background: #F5F5F5;
+      background: #F7F6F3;
       min-height: 100vh;
       padding: 40px 20px;
     }
@@ -28,13 +28,13 @@
     header h1 {
       font-size: 24px;
       font-weight: 600;
-      color: #0d1117;
-      letter-spacing: -0.015em;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
     }
 
     header p {
       font-size: 14px;
-      color: #666;
+      color: #888;
       margin-top: 6px;
     }
 
@@ -51,12 +51,12 @@
       padding: 10px 16px;
       font-size: 13px;
       color: #555;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      border: 1px solid #EBEBEB;
     }
 
     .stat span {
       font-weight: 600;
-      color: #0077b5;
+      color: #1a1a1a;
     }
 
     .filters {
@@ -68,66 +68,97 @@
 
     .filter-btn {
       background: white;
-      border: 1px solid #E7E7E7;
+      border: 1px solid #EBEBEB;
       border-radius: 999px;
       padding: 6px 16px;
       font-size: 13px;
       font-family: 'Inter', sans-serif;
-      color: #333;
+      color: #555;
       cursor: pointer;
       transition: all 0.15s;
     }
 
     .filter-btn:hover, .filter-btn.active {
-      background: #0077b5;
+      background: #1a1a1a;
       color: white;
-      border-color: #0077b5;
+      border-color: #1a1a1a;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+    }
+
+    .section-badge {
+      background: #E8E4FF;
+      color: #4B3DB8;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    .section-divider {
+      height: 1.5px;
+      background: #EBEBEB;
+      margin-bottom: 14px;
     }
 
     .job-card {
       background: white;
-      border-radius: 10px;
-      padding: 16px 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      border-radius: 12px;
+      border: 1px solid #EBEBEB;
+      padding: 16px 18px;
+      margin-bottom: 10px;
       text-decoration: none;
       display: block;
-      transition: box-shadow 0.2s;
+      transition: box-shadow 0.15s;
       cursor: pointer;
     }
 
     .job-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .job-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
     }
 
     .job-title {
       font-size: 14px;
-      font-weight: 500;
-      color: #0d1117;
-      margin-bottom: 4px;
-    }
-
-    .job-company {
-      font-size: 14px;
-      font-weight: 400;
-      color: #555;
-    }
-
-    .job-reason {
-      font-size: 12px;
-      color: #666;
-      margin-top: 6px;
+      font-weight: 600;
+      color: #1a1a1a;
     }
 
     .job-meta {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .job-reason {
+      background: #F5F5F5;
+      border-radius: 8px;
+      padding: 8px 12px;
       font-size: 12px;
-      color: #999;
-      margin-top: 6px;
+      color: #666;
     }
 
     .mouse-tag {
       position: fixed;
-      background: #111;
+      background: #1a1a1a;
       color: white;
       font-size: 12px;
       font-family: 'Inter', sans-serif;
@@ -259,27 +290,52 @@
         return;
       }
 
-      document.getElementById('job-list').innerHTML = filtered.map(job => {
-        const scoreColor = !job.score ? '' : job.score >= 7 ? '#16a34a' : job.score >= 4 ? '#d97706' : '#dc2626';
-        const scoreBadge = job.score ? `<span style="background:${scoreColor};color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-left:8px;">${job.score}/10</span>` : '';
-        const reasonText = job.reason ? `<div class="job-reason">${job.reason}</div>` : '';
-        return `
-          <a href="${job.link}" target="_blank" class="job-card">
-            <div style="display:flex;align-items:center;margin-bottom:4px;">
-              <div class="job-title" style="margin-bottom:0;">${job.title}</div>
-              ${scoreBadge}
+      const searches = ['business intern', 'summer intern', 'marketing intern'];
+      let html = '';
+
+      if (currentFilter === 'all') {
+        searches.forEach(keyword => {
+          const word = keyword.split(' ')[0];
+          const group = filtered.filter(j => j.title.toLowerCase().includes(word));
+          if (group.length === 0) return;
+          const label = keyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+          html += `
+            <div style="margin-bottom:28px;">
+              <div class="section-header">
+                <span class="section-title">${label}</span>
+                <span class="section-badge">+${group.length} new</span>
+              </div>
+              <div class="section-divider"></div>
+              ${group.map(job => renderCard(job)).join('')}
             </div>
-            <div class="job-company">${job.company}</div>
-            ${reasonText}
-            <div class="job-meta">${formatDate(job.timestamp)}</div>
-          </a>
-        `;
-      }).join('');
+          `;
+        });
+      } else {
+        html = filtered.map(job => renderCard(job)).join('');
+      }
+
+      document.getElementById('job-list').innerHTML = html;
 
       document.querySelectorAll('.job-card').forEach(card => {
         card.addEventListener('mouseenter', () => mouseTag.style.opacity = '1');
         card.addEventListener('mouseleave', () => mouseTag.style.opacity = '0');
       });
+    }
+
+    function renderCard(job) {
+      const scoreColor = !job.score ? null : job.score >= 7 ? { bg: '#DCFCE7', text: '#166534' } : job.score >= 4 ? { bg: '#FEF9C3', text: '#854D0E' } : { bg: '#FEE2E2', text: '#991B1B' };
+      const scoreBadge = scoreColor ? `<span style="background:${scoreColor.bg};color:${scoreColor.text};font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap;margin-left:12px;">${job.score}/10</span>` : '';
+      const reasonText = job.reason ? `<div class="job-reason">${job.reason}</div>` : '';
+      return `
+        <a href="${job.link}" target="_blank" class="job-card">
+          <div class="job-card-top">
+            <div class="job-title">${job.title}</div>
+            ${scoreBadge}
+          </div>
+          <div class="job-meta">${job.company} · ${formatDate(job.timestamp)}</div>
+          ${reasonText}
+        </a>
+      `;
     }
 
     loadJobs();
