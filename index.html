@@ -190,7 +190,7 @@
 </head>
 <body>
 
-  <div class="mouse-tag" id="mouse-tag">click to go to job posting :)</div>
+  <div class="mouse-tag" id="mouse-tag">appply to job :)</div>
 
   <div class="container">
     <header>
@@ -260,7 +260,9 @@
         document.getElementById('total-count').textContent = allJobs.length;
         document.getElementById('today-count').textContent = todayJobs.length;
         if (allJobs.length > 0) {
-          document.getElementById('last-updated-stat').textContent = formatDate(allJobs[allJobs.length - 1].timestamp);
+          const now = new Date();
+          const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+          const dateStr = formatDate(allJobs[allJobs.length - 1].timestamp); document.getElementById('last-updated-stat').textContent = `${dateStr} at ${timeStr}`;
         }
 
         document.querySelector('.count-business').textContent = allJobs.filter(j => j.title.toLowerCase().includes('business')).length;
