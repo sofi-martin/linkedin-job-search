@@ -1,9 +1,229 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>My Job Board</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LinkedIn Job Board</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #0d1117;
+      letter-spacing: -0.015em;
+    }
+
+    header p {
+      font-size: 14px;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat {
+      background: white;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #333;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .stat span {
+      font-weight: 600;
+      color: #0077b5;
+    }
+
+    .filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: white;
+      border: 1px solid #E7E7E7;
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      color: #333;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: #0077b5;
+      color: white;
+      border-color: #0077b5;
+    }
+
+    .job-card {
+      background: white;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      text-decoration: none;
+      display: block;
+      transition: box-shadow 0.15s;
+    }
+
+    .job-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .job-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #0d1117;
+      margin-bottom: 4px;
+    }
+
+    .job-company {
+      font-size: 14px;
+      font-weight: 400;
+      color: #555;
+    }
+
+    .job-meta {
+      font-size: 12px;
+      color: #999;
+      margin-top: 6px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 0;
+      color: #999;
+      font-size: 14px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 60px 0;
+      color: #999;
+      font-size: 14px;
+    }
+
+    .last-updated {
+      font-size: 12px;
+      color: #999;
+      text-align: center;
+      margin-top: 32px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Hello World</h1>
+  <div class="container">
+    <header>
+      <h1>Toronto Intern Jobs</h1>
+      <p>Updated automatically every 3 hours</p>
+      <div class="stats">
+        <div class="stat">Total: <span id="total-count">—</span> jobs</div>
+        <div class="stat">Last updated: <span id="last-updated-stat">—</span></div>
+      </div>
+    </header>
+
+    <div class="filters">
+      <button class="filter-btn active" onclick="filterJobs('all')">All</button>
+      <button class="filter-btn" onclick="filterJobs('business')">Business</button>
+      <button class="filter-btn" onclick="filterJobs('summer')">Summer</button>
+      <button class="filter-btn" onclick="filterJobs('marketing')">Marketing</button>
+    </div>
+
+    <div id="job-list">
+      <div class="loading">Loading jobs...</div>
+    </div>
+
+    <p class="last-updated" id="last-updated"></p>
+  </div>
+
+  <script>
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQSyieqO2tIzU3j1N0ms6Tw-2C68vZwaYtAg_tb3qZpQp3vblb5AV_DvSF1cqGJ4rPzXzTlIPQ1Krj6/pub?gid=0&single=true&output=csv';
+
+    let allJobs = [];
+    let currentFilter = 'all';
+
+    async function loadJobs() {
+      try {
+        const res = await fetch(`${CSV_URL}&t=${Date.now()}`);
+        const text = await res.text();
+        const rows = text.trim().split('\n').slice(1); // skip header
+
+        allJobs = rows.map(row => {
+          const cols = row.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
+          return {
+            title:     (cols[0] || '').replace(/"/g, '').trim(),
+            company:   (cols[1] || '').replace(/"/g, '').trim(),
+            link:      (cols[2] || '').replace(/"/g, '').trim(),
+            timestamp: (cols[3] || '').replace(/"/g, '').trim()
+          };
+        }).filter(j => j.title);
+
+        // Update stats
+        document.getElementById('total-count').textContent = allJobs.length;
+        if (allJobs.length > 0) {
+          document.getElementById('last-updated-stat').textContent = allJobs[allJobs.length - 1].timestamp;
+        }
+
+        renderJobs();
+      } catch (e) {
+        document.getElementById('job-list').innerHTML = '<div class="empty">Failed to load jobs. Please try again later.</div>';
+      }
+    }
+
+    function filterJobs(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      renderJobs();
+    }
+
+    function renderJobs() {
+      const filtered = currentFilter === 'all'
+        ? allJobs
+        : allJobs.filter(j => j.title.toLowerCase().includes(currentFilter));
+
+      if (filtered.length === 0) {
+        document.getElementById('job-list').innerHTML = '<div class="empty">No jobs found.</div>';
+        return;
+      }
+
+      document.getElementById('job-list').innerHTML = filtered.map(job => `
+        <a href="${job.link}" target="_blank" class="job-card">
+          <div class="job-title">${job.title}</div>
+          <div class="job-company">${job.company}</div>
+          <div class="job-meta">${job.timestamp}</div>
+        </a>
+      `).join('');
+    }
+
+    loadJobs();
+  </script>
 </body>
 </html>
